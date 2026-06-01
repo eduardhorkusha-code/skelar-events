@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Performance Review — Developer Setup</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:     #f5f4f0;
+      --card:   #ffffff;
+      --border: #e8e6e0;
+      --text:   #1a1a1a;
+      --muted:  #888;
+      --red:    #DC2626;
+      --blue:   #2563EB;
+      --green:  #16a34a;
+      --purple: #7C3AED;
+      --amber:  #d97706;
+      --teal:   #0d9488;
+      --mono:   'DM Mono', 'Fira Mono', monospace;
+    }
+
+    body {
+      font-family: 'DM Sans', 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    .wrap { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 28px; }
+    .section { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+
+    /* hero */
+    .hero {
+      background: var(--text); border-radius: 14px;
+      padding: 36px 36px 32px; color: #fff;
+      display: flex; align-items: flex-start; gap: 20px;
+    }
+    .hero-icon {
+      width: 52px; height: 52px; border-radius: 12px;
+      background: var(--red);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 24px; flex-shrink: 0;
+    }
+    .hero h1 { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+    .hero p  { font-size: 13.5px; color: #aaa; line-height: 1.65; max-width: 520px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+      padding: 3px 10px; border-radius: 20px; margin-bottom: 12px;
+    }
+
+    /* section header */
+    .sec-head {
+      padding: 16px 24px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .sec-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+    .sec-head h2 { font-size: 15px; font-weight: 700; }
+    .sec-head p  { font-size: 12px; color: var(--muted); margin-top: 1px; }
+
+    /* step */
+    .checklist { padding: 4px 0; }
+    .step {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 24px;
+      border-bottom: 1px solid #f5f3ef;
+      cursor: pointer;
+      transition: background .12s;
+    }
+    .step:last-child { border-bottom: none; }
+    .step:hover { background: #fafaf7; }
+    .step.done { opacity: .5; }
+
+    .checkbox {
+      width: 22px; height: 22px; border-radius: 7px;
+      border: 2px solid var(--border);
+      background: #fff; flex-shrink: 0; margin-top: 2px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all .15s;
+    }
+    .step.done .checkbox { background: var(--green); border-color: var(--green); }
+    .check-svg { display: none; }
+    .step.done .check-svg { display: block; }
+
+    .step-body { flex: 1; min-width: 0; }
+    .step-num  { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 3px; }
+    .step-title { font-size: 14px; font-weight: 700; margin-bottom: 5px; }
+    .step.done .step-title { text-decoration: line-through; color: var(--muted); }
+    .step-desc  { font-size: 12.5px; color: #555; line-height: 1.6; }
+
+    /* where label */
+    .where {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #f0f0ec; border: 1px solid var(--border);
+      border-radius: 6px; padding: 5px 12px;
+      font-size: 11.5px; font-weight: 600; color: #444;
+      margin: 10px 0 6px; width: fit-content;
+    }
+    .where-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+    /* code blocks */
+    .code-wrap { margin-top: 8px; }
+    .code-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    pre {
+      background: #1e1e1e; color: #d4d4d4;
+      font-family: var(--mono); font-size: 12px;
+      padding: 13px 16px; border-radius: 9px;
+      overflow-x: auto; line-height: 1.7;
+      position: relative; white-space: pre-wrap; word-break: break-word;
+    }
+    .copy-btn {
+      position: absolute; top: 8px; right: 8px;
+      background: #333; border: none; border-radius: 5px;
+      color: #999; font-size: 11px; padding: 3px 9px;
+      cursor: pointer; font-family: var(--mono);
+      transition: all .12s; white-space: nowrap;
+    }
+    .copy-btn:hover { background: #444; color: #fff; }
+    .copy-btn.copied { background: var(--green); color: #fff; }
+
+    .kw  { color: #9cdcfe; }
+    .cm  { color: #6a9955; }
+    .str { color: #ce9178; }
+    .nm  { color: #4ec9b0; }
+    .val { color: #dcdcaa; }
+
+    /* success box */
+    .success {
+      display: flex; gap: 10px; align-items: flex-start;
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      padding: 12px 14px; border-radius: 9px;
+      font-size: 12.5px; line-height: 1.55; color: #14532d;
+      margin-top: 10px;
+    }
+    .success-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+
+    /* info boxes */
+    .info {
+      display: flex; gap: 10px; align-items: flex-start;
+      padding: 11px 14px; border-radius: 9px;
+      font-size: 12.5px; line-height: 1.55;
+      margin-top: 10px; border: 1px solid transparent;
+    }
+    .info-icon { font-size: 15px; flex-shrink: 0; margin-top: 1px; }
+    .info.note   { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .info.warn   { background: #fefce8; color: #92400e; border-color: #fde68a; }
+    .info.alert  { background: #fef2f2; color: #991b1b; border-color: #fecaca; }
+    .info.purple { background: #faf5ff; color: #5b21b6; border-color: #ddd6fe; }
+
+    /* screenshot mockup */
+    .mock {
+      background: #f8f8f6; border: 1px solid var(--border);
+      border-radius: 9px; padding: 14px 16px;
+      font-size: 12px; color: #555; line-height: 1.55;
+      margin-top: 10px; font-family: var(--mono);
+    }
+    .mock-bar {
+      display: flex; gap: 5px; margin-bottom: 10px;
+    }
+    .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .mock-title { font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; font-family: sans-serif; }
+    .mock-line { margin: 2px 0; }
+    .mock-out  { color: #16a34a; }
+    .mock-err  { color: #dc2626; }
+    .mock-dim  { color: #aaa; }
+    .mock-prompt { color: #7c3aed; }
+
+    /* step divider */
+    .step-divider {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted); padding: 10px 24px 4px;
+    }
+
+    /* access table */
+    .table-wrap { padding: 20px 24px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th {
+      text-align: left; padding: 8px 12px;
+      font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--muted); border-bottom: 1px solid var(--border);
+    }
+    td { padding: 9px 12px; border-bottom: 1px solid #f5f3ef; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .role-badge {
+      display: inline-flex; align-items: center;
+      font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px;
+      font-family: var(--mono);
+    }
+
+    /* file tree */
+    .tree-wrap { padding: 20px 24px; }
+    .tree pre { background: #fafaf7; color: var(--text); border: 1px solid var(--border); white-space: pre; }
+    .folder  { color: var(--blue); font-weight: 700; }
+    .file-ts { color: var(--purple); }
+    .file-md { color: var(--teal); }
+    .file-sql{ color: var(--amber); }
+    .comment { color: var(--muted); }
+
+    /* progress */
+    .progress-wrap { padding: 20px 24px 16px; }
+    .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; }
+    .progress-track { height: 8px; background: var(--border); border-radius: 20px; overflow: hidden; }
+    .progress-bar   { height: 100%; background: var(--green); border-radius: 20px; transition: width .4s ease; }
+    .progress-steps { font-size: 11px; font-weight: 700; color: var(--green); }
+
+    /* toast */
+    .toast {
+      position: fixed; bottom: 32px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: #111; color: #fff;
+      padding: 12px 22px; border-radius: 40px;
+      font-size: 13.5px; font-weight: 600;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      white-space: nowrap; z-index: 999;
+      display: flex; align-items: center; gap: 9px;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    .footer { text-align: center; font-size: 12px; color: var(--muted); padding-top: 8px; }
+
+    @media (max-width: 600px) {
+      .hero { flex-direction: column; padding: 24px 20px; }
+      .sec-head, .step, .table-wrap, .tree-wrap, .progress-wrap { padding-left: 16px; padding-right: 16px; }
+      .toast { font-size: 12px; padding: 10px 18px; white-space: normal; max-width: 88vw; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-icon">📋</div>
+    <div>
+      <div class="badge" style="background:#DC262620;color:#fca5a5;">● SKELAR Vault</div>
+      <h1>Привіт, Вікторіє 👋</h1>
+      <p>Це твій особистий гід для підключення до модуля <strong style="color:#fff;">Performance Review</strong>.<br>
+      Виконуй кроки по порядку — після кожного ставь галочку. Для кожного кроку написано <em style="color:#ccc;">де саме</em> виконувати і <em style="color:#ccc;">як виглядає результат</em>.</p>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="section">
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Загальний прогрес</span>
+        <span class="progress-steps" id="progress-label">0 / 12 виконано</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 1 -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-num" style="background:#2563EB;">1</div>
+      <div>
+        <h2>Prerequisites — встанови інструменти</h2>
+        <p>Один раз на твоєму MacBook, якщо ще не встановлено</p>
+      </div>
+    </div>
+    <div class="checklist">
+
+      <!-- 1.1 Node -->
+      <div class="step" onclick="toggle(this,'Node.js перевірено')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 1.1</div>
+          <div class="step-title">Node.js 20+</div>
+          <div class="step-desc">Перевір чи встановлено та яка версія.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            Відкрий <strong>Terminal</strong> (Spotlight → "Terminal" або Finder → Applications → Utilities → Terminal)
+          </div>
+          <div class="code-wrap">
+            <pre id="c-node"><span class="kw">node</span> <span class="nm">-v</span>
+<button class="copy-btn" onclick="copyCode('c-node',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            <code>v20.x.x</code> або <code>v22.x.x</code> — будь-яка версія 20 або вище.<br>
+            Якщо бачиш <code>command not found</code> — іди на <a href="https://nodejs.org" target="_blank" style="color:#16a34a;">nodejs.org</a> → кнопка <strong>LTS</strong>, завантаж та встанови.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.2 pnpm -->
+      <div class="step" onclick="toggle(this,'pnpm встановлено')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 1.2</div>
+          <div class="step-title">pnpm — менеджер пакетів</div>
+          <div class="step-desc">Як npm, але швидший. Використовується в цьому проєкті.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            У тому ж вікні <strong>Terminal</strong>
+          </div>
+          <div class="code-wrap">
+            <pre id="c-pnpm"><span class="kw">npm</span> install <span class="nm">-g</span> pnpm
+<button class="copy-btn" onclick="copyCode('c-pnpm',this)">copy</button></pre>
+          </div>
+          <div class="code-wrap" style="margin-top:8px;">
+            <div class="code-label">Після встановлення перевір:</div>
+            <pre id="c-pnpm2"><span class="kw">pnpm</span> <span class="nm">-v</span>
+<button class="copy-btn" onclick="copyCode('c-pnpm2',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            <code>9.x.x</code> або вище — готово, йдемо далі.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 1.3 Claude Code -->
+      <div class="step" onclick="toggle(this,'Claude Code встановлено')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 1.3</div>
+          <div class="step-title">Claude Code CLI — твій AI-асистент</div>
+          <div class="step-desc">Програма яка запускається в терміналі і пише код замість тебе.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            У тому ж вікні <strong>Terminal</strong>
+          </div>
+          <div class="code-wrap">
+            <pre id="c-claude-install"><span class="kw">npm</span> install <span class="nm">-g</span> @anthropic-ai/claude-code
+<button class="copy-btn" onclick="copyCode('c-claude-install',this)">copy</button></pre>
+          </div>
+          <div class="code-wrap" style="margin-top:8px;">
+            <pre id="c-claude-v"><span class="kw">claude</span> <span class="nm">--version</span>
+<button class="copy-btn" onclick="copyCode('c-claude-v',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            Виведе версію, наприклад <code>1.x.x</code>.</div>
+          </div>
+          <div class="info note" style="margin-top:10px;">
+            <span class="info-icon">ℹ️</span>
+            <span>Потрібен акаунт на <a href="https://claude.ai" target="_blank" style="color:#1d4ed8;">claude.ai</a> з підпискою <strong>Pro</strong> або <strong>Team</strong> — або Anthropic API key. Якщо немає — уточни у Eduard.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 2 -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-num" style="background:#7C3AED;">2</div>
+      <div>
+        <h2>Отримай код</h2>
+        <p>Клонуй репозиторій та запусти проєкт</p>
+      </div>
+    </div>
+    <div class="checklist">
+
+      <!-- 2.1 GitHub invite -->
+      <div class="step" onclick="toggle(this,'GitHub запрошення прийнято')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 2.1</div>
+          <div class="step-title">Прийми запрошення у GitHub</div>
+          <div class="step-desc">Eduard надішле тобі на пошту запрошення стати collaborator на приватному репозиторії.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#2563EB;"></div>
+            Відкрий <strong>Email → лист від github.com</strong> → кнопка <strong>"Accept invitation"</strong>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            Тебе відкриє на GitHub і покаже "You now have access to eduardhorkusha-code/skelar-vault". Можна закрити.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2.2 Clone -->
+      <div class="step" onclick="toggle(this,'Репо склоновано')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 2.2</div>
+          <div class="step-title">Клонуй репозиторій та встанови залежності</div>
+          <div class="step-desc">Виконай всі три команди по черзі. Після кожної чекай поки вона завершиться.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            У вікні <strong>Terminal</strong> — по одній команді за раз
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">1. Клонуй репо (виконай один раз):</div>
+            <pre id="c-clone"><span class="kw">git</span> clone https://github.com/eduardhorkusha-code/skelar-vault.git
+<button class="copy-btn" onclick="copyCode('c-clone',this)">copy</button></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">2. Перейди в папку застосунку:</div>
+            <pre id="c-cd"><span class="kw">cd</span> <span class="nm">skelar-vault/apps/hub</span>
+<button class="copy-btn" onclick="copyCode('c-cd',this)">copy</button></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">3. Встанови залежності (займе ~1–2 хвилини):</div>
+            <pre id="c-install"><span class="kw">pnpm</span> install
+<button class="copy-btn" onclick="copyCode('c-install',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            <code>pnpm install</code> закінчиться словами <code>Done in ...</code> або <code>Progress: resolved ...</code>. Жодних червоних <code>ERROR</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2.3 env -->
+      <div class="step" onclick="toggle(this,'.env.local додано')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 2.3</div>
+          <div class="step-title">Додай секретний файл .env.local</div>
+          <div class="step-desc">Цей файл містить ключі до бази даних. Eduard надішле тобі окремо (не через git).</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#d97706;"></div>
+            У <strong>Finder</strong> — перейди в папку <code>skelar-vault/apps/hub/</code> і поклади туди файл <code>.env.local</code>
+          </div>
+
+          <div class="info warn">
+            <span class="info-icon">💡</span>
+            <span>Файли що починаються з <code>.</code> приховані в macOS. Щоб побачити їх у Finder: натисни <strong>⌘ + Shift + .</strong></span>
+          </div>
+          <div class="code-wrap" style="margin-top:8px;">
+            <div class="code-label">Або через термінал — перевір що файл на місці:</div>
+            <pre id="c-env-check"><span class="kw">ls</span> <span class="nm">-la</span> | <span class="kw">grep</span> <span class="str">.env</span>
+<button class="copy-btn" onclick="copyCode('c-env-check',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            Термінал покаже рядок з <code>.env.local</code> в переліку файлів.</div>
+          </div>
+          <div class="info alert" style="margin-top:8px;">
+            <span class="info-icon">🚫</span>
+            <span><strong>Ніколи не комітити .env.local</strong> у git. Він вже в <code>.gitignore</code> — просто не додавай його вручну.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2.4 dev server -->
+      <div class="step" onclick="toggle(this,'Dev сервер запущено — проєкт живий!')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 2.4</div>
+          <div class="step-title">Запусти dev-сервер і відкрий у браузері</div>
+          <div class="step-desc">Перевіримо що проєкт запускається.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            У <strong>Terminal</strong> — переконайся що ти в папці <code>apps/hub</code>
+          </div>
+          <div class="code-wrap">
+            <pre id="c-dev"><span class="cm"># якщо ти не в apps/hub — перейди:</span>
+<span class="kw">cd</span> <span class="nm">skelar-vault/apps/hub</span>
+
+<span class="cm"># запусти сервер:</span>
+<span class="kw">pnpm</span> dev
+<button class="copy-btn" onclick="copyCode('c-dev',this)">copy</button></pre>
+          </div>
+          <div class="where" style="margin-top:12px;">
+            <div class="where-dot" style="background:#2563EB;"></div>
+            Відкрий <strong>браузер</strong> → адреса <code>http://localhost:3000</code>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            У терміналі з'явиться <code>✓ Ready in ...</code>. У браузері відкриється логін-сторінка SKELAR Vault — залогінься через свій @skelar.tech акаунт.</div>
+          </div>
+          <div class="info note" style="margin-top:8px;">
+            <span class="info-icon">💡</span>
+            <span>Сервер залишається запущеним у терміналі — <strong>не закривай</strong> це вікно поки працюєш. Щоб зупинити — <strong>Ctrl + C</strong>.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 3 -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-num" style="background:#0d9488;">3</div>
+      <div>
+        <h2>Запуск Claude Code</h2>
+        <p>Відкрий новий термінал для Клода і дай йому правильний стартовий промпт</p>
+      </div>
+    </div>
+    <div class="checklist">
+
+      <!-- 3.1 new terminal -->
+      <div class="step" onclick="toggle(this,'Claude Code запущено')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 3.1</div>
+          <div class="step-title">Відкрий новий термінал і запусти Claude</div>
+          <div class="step-desc">Важливо: dev-сервер залишається в старому вікні. Клод запускається в <strong>окремому</strong> новому вікні Terminal.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            <strong>Terminal → Shell → New Window</strong> (або ⌘ + N) — нове вікно
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">1. Перейди в папку модуля:</div>
+            <pre id="c-cd-pr"><span class="kw">cd</span> <span class="nm">skelar-vault/apps/hub/performance-review</span>
+<button class="copy-btn" onclick="copyCode('c-cd-pr',this)">copy</button></pre>
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">2. Запусти Claude Code:</div>
+            <pre id="c-claude-run"><span class="kw">claude</span>
+<button class="copy-btn" onclick="copyCode('c-claude-run',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            Claude Code відкриється прямо в терміналі — покаже великий логотип і <code>&gt;</code> в кінці де можна вводити повідомлення.<br><br>
+            При першому запуску попросить авторизацію — обери <strong>"Login with Claude.ai"</strong>, відкриється браузер, підтвердь там.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3.2 starter prompt -->
+      <div class="step" onclick="toggle(this,'Стартовий промпт надіслано — починаємо! 🚀')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 3.2</div>
+          <div class="step-title">⚡ Надішли стартовий промпт</div>
+          <div class="step-desc">
+            Це найважливіший крок — правильний старт визначає всю подальшу роботу.<br>
+            Скопіюй текст нижче і встав як <strong>перше повідомлення</strong> Клоду. Після цього можеш просто описувати що хочеш зробити — решту він зробить сам.
+          </div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#7C3AED;"></div>
+            У вікні <strong>Claude Code</strong> (термінал з запущеним claude) — натисни Enter після вставки
+          </div>
+          <div class="code-wrap">
+            <div class="code-label">Скопіюй і відправ Клоду як перше повідомлення:</div>
+            <pre id="c-prompt">Привіт! Я Вікторія, буду розробляти UI для модуля Performance Review в SKELAR Vault.
+
+Контекст проєкту:
+- Monorepo: skelar-vault (Turborepo + pnpm)
+- App: apps/hub (Next.js 15, TypeScript, Tailwind CSS)
+- Auth: Supabase SSR (вже налаштований)
+- Моя робоча папка: apps/hub/performance-review/
+- Роут: apps/hub/app/performance-review/page.tsx
+
+Що вже зроблено (не чіпай):
+- performance-review/types/index.ts — всі TypeScript типи
+- performance-review/lib/auth.ts — getMyPerfReviewRole(), getMyEmployee()
+- performance-review/lib/queries.ts — Supabase fetchers
+- app/performance-review/page.tsx — server component
+- Supabase міграція вже задеплоєна
+
+Мій файл для роботи:
+performance-review/components/PerfReviewPageClient.tsx
+Це client component. Він отримує пропси: myRole, myUser, cycle, reviews.
+
+Заборонені папки (не торкатись!):
+- apps/hub/app/talent-acquisition/
+- apps/hub/app/admin/
+- apps/hub/lib/supabase/
+- apps/reputation/
+
+Прочитай спочатку AGENTS.md і PerfReviewPageClient.tsx, потім скажи що бачиш і будемо починати.
+<button class="copy-btn" onclick="copyCode('c-prompt',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            Клод прочитає файли і відповість — опише що бачить у <code>PerfReviewPageClient.tsx</code> і запитає що робимо далі. Все готово до вайбкодінгу!</div>
+          </div>
+          <div class="info purple" style="margin-top:8px;">
+            <span class="info-icon">🤖</span>
+            <span>Після цього просто пиши що хочеш зробити звичайною мовою — Клод сам знайде файли, напише код, виправить помилки. Ти керуєш, він кодить.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 4 -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-num" style="background:#d97706;">4</div>
+      <div>
+        <h2>Git workflow — зберігай зміни</h2>
+        <p>Після кожного блоку роботи зберігай в git і пушай на GitHub</p>
+      </div>
+    </div>
+    <div class="checklist">
+
+      <div class="step" onclick="toggle(this,'Робочу гілку створено')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 4.1</div>
+          <div class="step-title">Створи свою робочу гілку (один раз)</div>
+          <div class="step-desc">Git-гілка — це твій власний простір для змін. Ти не впливаєш на основну гілку поки не зробиш merge.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            У <strong>Terminal</strong> — з папки <code>skelar-vault</code> (не з <code>apps/hub</code>)
+          </div>
+          <div class="code-wrap">
+            <pre id="c-branch"><span class="kw">git</span> checkout <span class="nm">-b</span> feature/performance-review-ui
+<button class="copy-btn" onclick="copyCode('c-branch',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            <code>Switched to a new branch 'feature/performance-review-ui'</code></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="step" onclick="toggle(this,'Git workflow зрозумілий')">
+        <div class="checkbox"><svg class="check-svg" width="12" height="12" viewBox="0 0 12 12"><path d="M2 6l3 3 5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></div>
+        <div class="step-body">
+          <div class="step-num">крок 4.2</div>
+          <div class="step-title">Комітай і пушай свої зміни</div>
+          <div class="step-desc">Виконуй ці команди кожного разу коли хочеш зберегти прогрес. Додавай тільки папки performance-review — нічого зайвого.</div>
+
+          <div class="where">
+            <div class="where-dot" style="background:#0d9488;"></div>
+            У <strong>Terminal</strong> — з кореня <code>skelar-vault/</code>
+          </div>
+          <div class="code-wrap">
+            <pre id="c-commit"><span class="cm"># додай тільки свої файли:</span>
+<span class="kw">git</span> add <span class="nm">apps/hub/performance-review/</span>
+<span class="kw">git</span> add <span class="nm">apps/hub/app/performance-review/</span>
+
+<span class="cm"># збережи з коментарем (заміни текст в лапках):</span>
+<span class="kw">git</span> commit <span class="nm">-m</span> <span class="str">"feat: employee view layout"</span>
+
+<span class="cm"># відправ на GitHub:</span>
+<span class="kw">git</span> push origin feature/performance-review-ui
+<button class="copy-btn" onclick="copyCode('c-commit',this)">copy</button></pre>
+          </div>
+
+          <div class="success">
+            <span class="success-icon">✅</span>
+            <div><strong>Виглядає так коли все OK:</strong><br>
+            Після <code>git push</code> побачиш щось на кшталт <code>Branch 'feature/...' set up to track remote branch</code>. Зміни з'являться на GitHub.</div>
+          </div>
+          <div class="info alert" style="margin-top:8px;">
+            <span class="info-icon">🚫</span>
+            <span>Не додавати в git: <code>talent-acquisition/</code>, <code>app/admin/</code>, <code>lib/supabase/</code>, <code>apps/reputation/</code> — ці папки чіпати не можна.</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 5 — Access model -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-num" style="background:#DC2626;">5</div>
+      <div>
+        <h2>Access model — хто що бачить</h2>
+        <p>Довідково: роль визначає що показувати у UI</p>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Роль</th><th>Бачить</th><th>Може редагувати</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="role-badge" style="background:#fef2f2;color:#DC2626;">employee</span></td>
+            <td>Тільки свій review у поточному циклі</td>
+            <td>Self-assessment поля</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge" style="background:#eff6ff;color:#2563EB;">manager</span></td>
+            <td>Свій + всі прямі підлеглі (via <code>manager_id</code>)</td>
+            <td>Manager assessment + категорії</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge" style="background:#f0fdf4;color:#16a34a;">hr</span></td>
+            <td>Всі review у поточному циклі</td>
+            <td>Читання + калібрація</td>
+          </tr>
+          <tr>
+            <td><span class="role-badge" style="background:#faf5ff;color:#7C3AED;">admin</span></td>
+            <td>Все + управління доступом</td>
+            <td>Повний доступ</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="info note" style="margin-top:16px;">
+        <span class="info-icon">ℹ️</span>
+        <span>Немає рядку в <code>perf_review_access</code> → редірект на <code>/?no_access=performance-review</code>. Доступ видає Eduard.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- SECTION 6 — Files -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <div class="section">
+    <div class="sec-head">
+      <div class="sec-num" style="background:#475569;">6</div>
+      <div>
+        <h2>Структура файлів</h2>
+        <p>Де що лежить — Клод це і так знає, але корисно мати перед очима</p>
+      </div>
+    </div>
+    <div class="tree-wrap">
+      <pre><span class="folder">apps/hub/</span>
+<span class="comment">│</span>
+├── <span class="folder">app/performance-review/</span>
+<span class="comment">│   └── page.tsx</span>          <span class="comment">← server route: auth-gate + data fetch</span>
+<span class="comment">│</span>
+└── <span class="folder">performance-review/</span>       <span class="comment">← твоя робоча папка</span>
+    ├── <span class="file-md">AGENTS.md</span>             <span class="comment">← повний гід для Клода</span>
+    ├── <span class="folder">types/</span>
+    │   └── <span class="file-ts">index.ts</span>          <span class="comment">← всі TypeScript типи</span>
+    ├── <span class="folder">lib/</span>
+    │   ├── <span class="file-ts">auth.ts</span>           <span class="comment">← getMyPerfReviewRole()</span>
+    │   └── <span class="file-ts">queries.ts</span>        <span class="comment">← Supabase fetchers</span>
+    └── <span class="folder">components/</span>
+        └── <span class="file-ts">PerfReviewPageClient.tsx</span>  <span class="comment">← ← ← вайбкодь тут</span>
+
+<span class="folder">supabase/migrations/</span>
+└── <span class="file-sql">20260430_performance_review.sql</span>  <span class="comment">← вже задеплоєно</span></pre>
+    </div>
+  </div>
+
+  <!-- footer -->
+  <div class="footer">
+    SKELAR Vault · Performance Review Module ·
+    <a href="https://github.com/eduardhorkusha-code/skelar-vault" target="_blank" style="color:#2563EB;">github.com/eduardhorkusha-code/skelar-vault</a>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast">
+  <span id="toast-icon">🎉</span>
+  <span id="toast-text"></span>
+</div>
+
+<script>
+  const TOTAL = 12;
+
+  const MILESTONES = {
+    3:  { icon:"💪", text:"Prerequisites готові — відмінно!" },
+    7:  { icon:"🔥", text:"Проєкт запущено — половина шляху!" },
+    9:  { icon:"🤖", text:"Claude Code готовий — вайбкодінг починається!" },
+    12: { icon:"🚀", text:"Вікторія — ти топ! Все налаштовано." },
+  };
+
+  const PRAISES = [
+    "Так тримати!", "Чудово!", "Молодець!", "Ідеально!", "Крок зроблено!"
+  ];
+
+  let toastTimer = null;
+
+  function showToast(icon, text) {
+    const el = document.getElementById('toast');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-text').textContent = text;
+    el.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+  }
+
+  function toggle(el, msg) {
+    el.classList.toggle('done');
+    const done = document.querySelectorAll('.step.done').length;
+    const pct  = Math.round((done / TOTAL) * 100);
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-label').textContent = done + ' / ' + TOTAL + ' виконано';
+
+    if (el.classList.contains('done')) {
+      if (MILESTONES[done]) {
+        showToast(MILESTONES[done].icon, MILESTONES[done].text);
+      } else if (msg) {
+        showToast('✅', msg + ' ' + PRAISES[Math.floor(Math.random() * PRAISES.length)]);
+      }
+    }
+  }
+
+  function copyCode(id, btn) {
+    const pre = document.getElementById(id);
+    const text = pre.innerText.replace(/copy\s*$/, '').trim();
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'copied ✓';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1800);
+    });
+  }
+</script>
+</body>
+</html>
