@@ -62,12 +62,18 @@ export async function GET(request: NextRequest) {
   }
 
   // Check user_roles for scope "events"
-  const { data: existing } = await admin
+  const { data: existing, error: rolesError } = await admin
     .from('user_roles')
     .select('status')
     .eq('user_id', user.id)
     .eq('scope', 'events')
     .single()
+
+  // PGRST116 = no rows = new user, not an error
+  if (rolesError && rolesError.code !== 'PGRST116') {
+    console.error('[callback] user_roles query failed:', rolesError.message)
+    return NextResponse.redirect(new URL('/auth/error?reason=db_error', request.url))
+  }
 
   if (existing) {
     if (existing.status === 'blocked') return NextResponse.redirect(new URL('/auth/blocked', request.url))
