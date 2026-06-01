@@ -64,9 +64,7 @@ export default function PendingPage() {
           textAlign: "left",
         }}>
           <strong>What happens next?</strong><br/>
-          Contact your team lead or IT admin at{" "}
-          <a href="mailto:it@skelar.tech" style={{ color: "#92400e" }}>it@skelar.tech</a>{" "}
-          to speed up approval.
+          Напишіть своєму менеджеру, щоб прискорити підтвердження доступу.
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
