@@ -4,7 +4,9 @@ import { createClient, createAdmin } from '@/lib/supabase/server'
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
-  const next = searchParams.get('next') ?? '/events'
+  const nextRaw = searchParams.get('next') ?? '/events'
+  // L3: open redirect guard — only allow relative paths that don't start with //
+  const next = nextRaw.startsWith('/') && !nextRaw.startsWith('//') ? nextRaw : '/events'
 
   if (!code) {
     return NextResponse.redirect(new URL('/login', request.url))
@@ -87,6 +89,11 @@ export async function GET(request: NextRequest) {
     .select('auto_approve_domains, default_role')
     .eq('scope', 'events')
     .single()
+
+  // H4: never auto-approve unverified emails
+  if (!user.email_confirmed_at) {
+    return NextResponse.redirect(new URL('/auth/pending', request.url))
+  }
 
   const domain = user.email?.split('@')[1]?.toLowerCase() ?? ''
   const autoApprove =
