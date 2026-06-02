@@ -1200,8 +1200,11 @@ export function EventsPageClient({ events: initialEvents, userId, name, role, is
         if (!evLocs.some(loc => filters.location.includes(loc))) return false
       }
       if (view === 'calendar') {
-        const d = new Date(ev.start_at)
-        if (d.getFullYear() !== calYear || d.getMonth() !== calMonth) return false
+        // Include events that overlap with the displayed month:
+        // starts in month, ends in month, or spans through it entirely.
+        const monthStart = new Date(calYear, calMonth, 1).getTime()
+        const monthEnd   = new Date(calYear, calMonth + 1, 0, 23, 59, 59, 999).getTime()
+        if (new Date(ev.end_at).getTime() < monthStart || new Date(ev.start_at).getTime() > monthEnd) return false
       }
       return true
     })

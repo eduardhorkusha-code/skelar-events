@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createAdmin } from '@/lib/supabase/server'
 import { generateOccurrences } from '@/events/lib/recurrence'
 import { notifyEventChange } from '@/events/lib/notify'
 import { canEdit as hasEditRole } from '@/lib/auth/roles'
@@ -18,6 +18,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const user = await requireAdmin(supabase)
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+  // Use service-role client for writes — RLS on corporate_events checks profiles.role
+  // (legacy) but skelar-events auth uses user_roles, so user-client updates are blocked.
+  const admin = createAdmin()
+
   const editMode: RecurrenceEditMode =
     (req.nextUrl.searchParams.get('edit_mode') as RecurrenceEditMode | null) ?? 'this'
 
@@ -28,7 +32,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Fetch old row for change diffing BEFORE the update.
     // Use select('*') so the query doesn't fail if optional columns
     // (shortlist_date, registration_deadline) haven't been migrated yet.
-    const { data: oldRow, error: oldRowErr } = await supabase
+    const { data: oldRow, error: oldRowErr } = await admin
       .from('corporate_events')
       .select('*')
       .eq('id', id)
@@ -39,7 +43,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 
     // Simple single-event update — original behaviour
-    const { data, error } = await supabase
+    const { data, error } = await admin
       .from('corporate_events')
       .update({ ...body, updated_at: now })
       .eq('id', id)
@@ -97,14 +101,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Update the event itself + all following instances
     const updatePayload = { ...body, updated_at: now }
 
-    const { error: selfErr } = await supabase
+    const { error: selfErr } = await admin
       .from('corporate_events')
       .update(updatePayload)
       .eq('id', id)
 
     if (selfErr) return NextResponse.json({ error: selfErr.message }, { status: 500 })
 
-    const { error: followErr } = await supabase
+    const { error: followErr } = await admin
       .from('corporate_events')
       .update(updatePayload)
       .eq('recurrence_id', seriesId)
@@ -163,7 +167,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const updatePayload = { ...body, updated_at: now }
 
     // Update the template (recurrence_rule lives here)
-    const { error: tplErr } = await supabase
+    const { error: tplErr } = await admin
       .from('corporate_events')
       .update(updatePayload)
       .eq('id', seriesId)
@@ -171,7 +175,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (tplErr) return NextResponse.json({ error: tplErr.message }, { status: 500 })
 
     // Update all instances
-    const { error: instErr } = await supabase
+    const { error: instErr } = await admin
       .from('corporate_events')
       .update(updatePayload)
       .eq('recurrence_id', seriesId)
@@ -248,6 +252,8 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   const user = await requireAdmin(supabase)
   if (!user) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
+  const admin = createAdmin()
+
   const editMode: RecurrenceEditMode =
     (req.nextUrl.searchParams.get('edit_mode') as RecurrenceEditMode | null) ?? 'this'
 
@@ -255,7 +261,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   if (editMode === 'this') {
     // Original behaviour — soft-delete single event
-    const { error } = await supabase
+    const { error } = await admin
       .from('corporate_events')
       .update({ status: 'deleted', updated_at: now })
       .eq('id', id)
@@ -264,7 +270,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   }
 
   // Need the current event to resolve series context
-  const { data: currentEvent, error: fetchErr } = await supabase
+  const { data: currentEvent, error: fetchErr } = await admin
     .from('corporate_events')
     .select('recurrence_id, recurrence_index')
     .eq('id', id)
@@ -277,7 +283,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
   if (editMode === 'this_and_following') {
     // Soft-delete this event
-    const { error: selfErr } = await supabase
+    const { error: selfErr } = await admin
       .from('corporate_events')
       .update({ status: 'deleted', updated_at: now })
       .eq('id', id)
@@ -285,7 +291,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (selfErr) return NextResponse.json({ error: selfErr.message }, { status: 500 })
 
     // Soft-delete all following instances
-    const { error: followErr } = await supabase
+    const { error: followErr } = await admin
       .from('corporate_events')
       .update({ status: 'deleted', updated_at: now })
       .eq('recurrence_id', seriesId)
@@ -294,14 +300,14 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
     if (followErr) return NextResponse.json({ error: followErr.message }, { status: 500 })
   } else {
     // editMode === 'all': soft-delete template + all instances
-    const { error: tplErr } = await supabase
+    const { error: tplErr } = await admin
       .from('corporate_events')
       .update({ status: 'deleted', updated_at: now })
       .eq('id', seriesId)
 
     if (tplErr) return NextResponse.json({ error: tplErr.message }, { status: 500 })
 
-    const { error: instErr } = await supabase
+    const { error: instErr } = await admin
       .from('corporate_events')
       .update({ status: 'deleted', updated_at: now })
       .eq('recurrence_id', seriesId)

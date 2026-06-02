@@ -51,8 +51,10 @@ export function eventsByDay(
   const map = new Map<string, CalendarEntry[]>()
 
   for (const e of events) {
-    const startDay = isoDateUTC(e.start_at)
-    const endDay   = isoDateUTC(e.end_at)
+    // Use local dates so chips align with calendar cells (which also use local dates).
+    // isoDateUTC caused off-by-one for Kyiv (+3) events stored as UTC midnight.
+    const startDay = isoDate(new Date(e.start_at))
+    const endDay   = isoDate(new Date(e.end_at))
 
     // Start chip
     const startArr = map.get(startDay) ?? []
