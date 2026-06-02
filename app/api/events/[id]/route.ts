@@ -2,17 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateOccurrences } from '@/events/lib/recurrence'
 import { notifyEventChange } from '@/events/lib/notify'
+import { canEdit as hasEditRole } from '@/lib/auth/roles'
 import type { RecurrenceEditMode, RecurrenceRule } from '@/events/types'
 
 async function requireAdmin(supabase: Awaited<ReturnType<typeof createClient>>) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return null
-  const { data: profile } = await supabase
-    .from('profiles').select('role, dashboards').eq('id', user.id).single()
-  const canEdit =
-    profile?.role === 'admin' ||
-    (profile?.role === 'manager' && (profile?.dashboards ?? []).includes('events'))
-  if (!canEdit) return null
+  if (!(await hasEditRole(user.id))) return null
   return user
 }
 
