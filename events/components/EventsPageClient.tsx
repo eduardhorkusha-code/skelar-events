@@ -1313,9 +1313,9 @@ export function EventsPageClient({ events: initialEvents, userId, name, role, is
             </Link>
           )}
           {isAdmin && (
-            <Link href="/admin" style={{ fontSize: 12, fontWeight: 600, color: '#aaa', padding: '5px 10px', border: '1px solid #444', borderRadius: 6, textDecoration: 'none' }}>
+            <a href="https://skelar-vault.vercel.app/admin/users" style={{ fontSize: 12, fontWeight: 600, color: '#aaa', padding: '5px 10px', border: '1px solid #444', borderRadius: 6, textDecoration: 'none' }}>
               Admin
-            </Link>
+            </a>
           )}
           <a href="/auth/logout" style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', border: '1px solid #444', borderRadius: 6, background: 'transparent', fontSize: 12, fontWeight: 500, color: '#aaa', textDecoration: 'none' }}>
             Log out
