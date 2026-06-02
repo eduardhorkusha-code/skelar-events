@@ -125,7 +125,7 @@ export function ManualTab() {
                 ))}
               </tbody>
             </table>
-            <p style={{ marginTop: 12, fontSize: 13, color: C.muted }}>Roles are set in the user Profiles table in Supabase. Set <span style={code}>role = 'manager'</span> to grant manager access.</p>
+            <p style={{ marginTop: 12, fontSize: 13, color: C.muted }}>Access is controlled via the <span style={code}>user_roles</span> table. Set <span style={code}>scope = 'events'</span>, <span style={code}>role = 'editor'</span> or <span style={code}>role = 'admin'</span>, and <span style={code}>status = 'active'</span> to grant manager access.</p>
           </>
         ) : (
           <>
@@ -169,7 +169,7 @@ export function ManualTab() {
               <li style={li}><strong>rsvps_read</strong> — any auth user can read RSVPs for published events</li>
               <li style={li}><strong>rsvps_own</strong> — users manage only their own RSVP rows</li>
             </ul>
-            <p>Role check uses <span style={code}>profiles.role IN ('admin','manager')</span>. Manager access to the manager page is controlled by <span style={code}>events/lib/auth.ts → requireEventsAccess()</span>.</p>
+            <p>Role check uses the <span style={code}>user_roles</span> table: <span style={code}>scope = 'events'</span> AND <span style={code}>role IN ('admin', 'editor')</span> AND <span style={code}>status = 'active'</span>. Manager access to the manager page is controlled by <span style={code}>events/lib/auth.ts → requireEventsAccess()</span>.</p>
 
             <div style={h2}>Key API routes</div>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'monospace' }}>
