@@ -24,6 +24,9 @@ export interface EventConfig {
   event_types:   EventTypeConfig[]
   teams?:        TeamConfig[]
   contact_email?: string   // platform contact shown to all users; set by manager
+  notion_url?:     string
+  sub_date_slots?: [string, string, string]
+  internal_tags?:  string[]
 }
 
 /** Parse "Name::Team" or plain "Name" from the team_members array */
@@ -86,6 +89,13 @@ export interface CorporateEvent {
   recurrence_index?: number | null
   // Intensive milestone dates (only for event_type = 'intensive')
   intensive_milestones?: IntensiveMilestone[] | null
+  // v2 fields
+  owner?:          string | null
+  tags?:           string[]
+  ashby_url?:      string | null
+  long_list_url?:  string | null
+  sub_dates?:      string[]
+  show_time?:      boolean
 }
 
 export const EVENT_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -120,3 +130,11 @@ export const DOMAINS = [
 ] as const
 
 export const LOCATIONS = ['Online', 'Kyiv', 'Lviv', 'Warsaw', 'UA', 'UA & PL'] as const
+
+export const DEFAULT_SUB_DATE_SLOTS: [string, string, string] = [
+  'Ярмарок вакансій',
+  'Short list',
+  '',
+]
+
+export const DEFAULT_INTERNAL_TAGS = ['Offline', 'Validation', 'Invite/long list']
