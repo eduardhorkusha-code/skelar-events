@@ -41,6 +41,7 @@ export function EditTable({
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
+              <th style={{ ...th, width: 44, textAlign: 'center' as const }}></th>
               <th style={{ ...th, minWidth: 240 }}>Title</th>
               <th style={{ ...th, minWidth: 112 }}>Status</th>
               <th style={{ ...th, minWidth: 102 }}>Org</th>
@@ -70,6 +71,21 @@ export function EditTable({
               return (
                 <React.Fragment key={ev.id}>
                   <tr style={{ background: isSaving ? '#fffef0' : rowBg, transition: 'background 0.15s' }}>
+                    <td style={{ ...td, width: 44, textAlign: 'center' as const }}>
+                      <a
+                        href={`/events?edit=${ev.id}`}
+                        title="Open full edit form"
+                        style={{
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 28, height: 28, borderRadius: 6,
+                          background: 'transparent', border: `1px solid ${C.border}`,
+                          color: C.muted, textDecoration: 'none', fontSize: 14, cursor: 'pointer',
+                          flexShrink: 0,
+                        }}
+                      >
+                        ✏️
+                      </a>
+                    </td>
                     <td style={{ ...td, minWidth: 240 }}>
                       <CellText id={ev.id} field="title" value={ev.title} style={{ fontWeight: 600 }} cs={cs} />
                     </td>
@@ -162,7 +178,7 @@ export function EditTable({
                   {/* Team picker expansion row */}
                   {cs.editTeamId === ev.id && (
                     <tr>
-                      <td colSpan={17} style={{ padding: '14px 18px 16px', borderBottom: `1px solid ${C.border}`, background: '#f0f8ff' }}>
+                      <td colSpan={18} style={{ padding: '14px 18px 16px', borderBottom: `1px solid ${C.border}`, background: '#f0f8ff' }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
                           Team Members — <span style={{ color: C.text, fontWeight: 600 }}>{ev.title}</span>
                         </div>
@@ -187,7 +203,7 @@ export function EditTable({
                     }
                     return (
                       <tr>
-                        <td colSpan={17} style={{ padding: '14px 18px 16px', borderBottom: `1px solid ${C.border}`, background: '#f0f8ff' }}>
+                        <td colSpan={18} style={{ padding: '14px 18px 16px', borderBottom: `1px solid ${C.border}`, background: '#f0f8ff' }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: C.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
                             Locations — <span style={{ color: C.text, fontWeight: 600 }}>{ev.title}</span>
                           </div>
@@ -243,7 +259,7 @@ export function EditTable({
                     }
                     return (
                       <tr>
-                        <td colSpan={17} style={{ padding: '14px 18px 16px', borderBottom: `1px solid ${C.border}`, background: '#fffbeb' }}>
+                        <td colSpan={18} style={{ padding: '14px 18px 16px', borderBottom: `1px solid ${C.border}`, background: '#fffbeb' }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 12 }}>
                             Key Dates — <span style={{ color: C.text, fontWeight: 600 }}>{ev.title}</span>
                           </div>
@@ -271,7 +287,7 @@ export function EditTable({
             })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={17} style={{ textAlign: 'center', padding: '60px 24px', color: C.muted, fontSize: 14 }}>
+                <td colSpan={18} style={{ textAlign: 'center', padding: '60px 24px', color: C.muted, fontSize: 14 }}>
                   No events match your search
                 </td>
               </tr>

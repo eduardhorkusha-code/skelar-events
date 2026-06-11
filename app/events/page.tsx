@@ -11,6 +11,7 @@ export const metadata = {
 export default async function EventsPage({ searchParams }: { searchParams: Promise<Record<string, string>> }) {
   const sp = await searchParams
   const previewMode = sp.preview === '1'
+  const editId = sp.edit ?? null
   const { userId, name, role, isAdmin: _isAdmin } = await requireEventsAccess()
   const isAdmin = _isAdmin && !previewMode
   const supabase = await createClient()
@@ -52,6 +53,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
       isAdmin={isAdmin}
       config={config}
       previewMode={previewMode}
+      initialEditId={editId ?? undefined}
     />
   )
 }

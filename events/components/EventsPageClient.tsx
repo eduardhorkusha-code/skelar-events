@@ -1354,9 +1354,10 @@ interface Props {
   isAdmin:     boolean
   config?:     EventConfig
   previewMode?: boolean
+  initialEditId?: string
 }
 
-export function EventsPageClient({ events: initialEvents, userId, name, role, isAdmin, config, previewMode }: Props) {
+export function EventsPageClient({ events: initialEvents, userId, name, role, isAdmin, config, previewMode, initialEditId }: Props) {
   const cfgDomains    = config?.domains     ?? [...DOMAINS]
   const cfgLocations  = config?.locations   ?? [...LOCATIONS]
   const cfgTypes      = config?.event_types ?? Object.entries(EVENT_TYPE_META).map(([key, m]) => ({ key, ...m }))
@@ -1367,7 +1368,10 @@ export function EventsPageClient({ events: initialEvents, userId, name, role, is
   const [filters,    setFilters]    = useState<Filters>(CLEAR_FILTERS)
   const [events,     setEvents]     = useState(initialEvents)
   const [selected,   setSelected]   = useState<CorporateEvent | null>(null)
-  const [editTarget, setEditTarget] = useState<Partial<CorporateEvent> | null>(null)
+  const [editTarget, setEditTarget] = useState<Partial<CorporateEvent> | null>(() => {
+    if (!initialEditId) return null
+    return initialEvents.find(e => e.id === initialEditId) ?? null
+  })
   const [rsvpLoading,setRsvpLoading]= useState(false)
   const [saving,     setSaving]     = useState(false)
   const [saveError,  setSaveError]  = useState<string | null>(null)
