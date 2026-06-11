@@ -206,6 +206,53 @@ function EventDetailModal({ event, onClose, onRsvp, rsvpLoading, canEdit, onEdit
             </div>
           )}
 
+          {event.owner && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 0', borderTop: `1px solid ${C.border2}` }}>
+              <span style={{ fontSize: 18 }}>👤</span>
+              <div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: C.muted, display: 'block', marginBottom: 2, letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>
+                  ВІДПОВІДАЛЬНА
+                </span>
+                <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>{event.owner}</span>
+              </div>
+            </div>
+          )}
+
+          {canEdit && (event.ashby_url || event.long_list_url) && (
+            <div style={{ display: 'flex', gap: 8, padding: '10px 0', borderTop: `1px solid ${C.border2}`, flexWrap: 'wrap' as const }}>
+              {event.ashby_url && (
+                <a
+                  href={event.ashby_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 12px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                    background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe',
+                    textDecoration: 'none',
+                  }}
+                >
+                  🏢 Ashby
+                </a>
+              )}
+              {event.long_list_url && (
+                <a
+                  href={event.long_list_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 6,
+                    padding: '6px 12px', borderRadius: 7, fontSize: 12, fontWeight: 600,
+                    background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0',
+                    textDecoration: 'none',
+                  }}
+                >
+                  📋 Long List
+                </a>
+              )}
+            </div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 18 }}>👥</span>
             <span style={{ fontSize: 13, color: C.text }}>
@@ -1546,13 +1593,33 @@ export function EventsPageClient({ events: initialEvents, userId, name, role, is
           <MyEventsView events={events} onEventClick={setSelected} todayStr={todayStr} cfgTypes={cfgTypes} />
         )}
 
-        {config?.contact_email && (
-          <div style={{ marginTop: 32, padding: '14px 20px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 16 }}>✉️</span>
-            <span style={{ fontSize: 13, color: C.muted }}>Questions about this platform?</span>
-            <a href={`mailto:${config.contact_email}`} style={{ fontSize: 13, fontWeight: 600, color: C.brand, textDecoration: 'none' }}>
-              {config.contact_email}
-            </a>
+        {(config?.contact_email || config?.notion_url) && (
+          <div style={{ marginTop: 32, padding: '14px 20px', background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+            {config.contact_email && (
+              <>
+                <span style={{ fontSize: 16 }}>✉️</span>
+                <span style={{ fontSize: 13, color: C.muted }}>Questions about this platform?</span>
+                <a href={`mailto:${config.contact_email}`} style={{ fontSize: 13, fontWeight: 600, color: C.brand, textDecoration: 'none' }}>
+                  {config.contact_email}
+                </a>
+              </>
+            )}
+            {config.notion_url && (
+              <>
+                {config.contact_email && <span style={{ color: C.border }}>|</span>}
+                <a
+                  href={config.notion_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: 600, color: C.text, textDecoration: 'none' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style={{ flexShrink: 0 }}>
+                    <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+                  </svg>
+                  Статті про платформу
+                </a>
+              </>
+            )}
           </div>
         )}
 
