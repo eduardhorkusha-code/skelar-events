@@ -12,17 +12,14 @@ export function getCalendarDays(year: number, month: number): Date[] {
   for (let i = startDow; i > 0; i--) days.push(new Date(year, month, 1 - i))
   const lastDay = new Date(year, month + 1, 0).getDate()
   for (let d = 1; d <= lastDay; d++) days.push(new Date(year, month, d))
-  // Fill to the end of the current week only (multiple of 7), not a full 6th row
   while (days.length % 7 !== 0) days.push(new Date(year, month + 1, days.length - lastDay - startDow + 1))
   return days
 }
 
-/** Local-time date string — used for "today" highlight only */
 export function isoDate(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-/** UTC date string — used for mapping ISO timestamps to calendar days */
 export function isoDateUTC(iso: string) {
   const d = new Date(iso)
   return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`
@@ -31,57 +28,54 @@ export function isoDateUTC(iso: string) {
 export type CalendarEntry = {
   event:     CorporateEvent
   isEnd:     boolean   // last day of the event
-  isOngoing: boolean   // event spans through this month (no start or end here)
+  isOngoing: boolean   // always false — ongoing display removed in v2
 }
 
-/**
- * Maps each event to calendar days:
- *  - start day → isEnd=false, isOngoing=false
- *  - end day   → isEnd=true,  isOngoing=false  (if different from start)
- *  - first day of current month → isOngoing=true  (started before + ends after)
- *
- * Uses UTC dates to avoid timezone-shift bugs.
- * Pass `monthFirstDay` (ISO string of the 1st of the displayed month) to
- * enable the ongoing-event anchor.
- */
 export function eventsByDay(
   events: CorporateEvent[],
-  monthFirstDay?: string,
+  _monthFirstDay?: string,   // kept for API compat, no longer used
 ): Map<string, CalendarEntry[]> {
   const map = new Map<string, CalendarEntry[]>()
 
   for (const e of events) {
-    // Use local dates so chips align with calendar cells (which also use local dates).
-    // isoDateUTC caused off-by-one for Kyiv (+3) events stored as UTC midnight.
     const startDay = isoDate(new Date(e.start_at))
     const endDay   = isoDate(new Date(e.end_at))
 
-    // Start chip
     const startArr = map.get(startDay) ?? []
     startArr.push({ event: e, isEnd: false, isOngoing: false })
     map.set(startDay, startArr)
 
     if (endDay !== startDay) {
-      // End chip
       const endArr = map.get(endDay) ?? []
       endArr.push({ event: e, isEnd: true, isOngoing: false })
       map.set(endDay, endArr)
-
-      // Ongoing anchor: event spans THROUGH the current month
-      // (started before the 1st, ends after the 1st but not on the 1st)
-      if (
-        monthFirstDay &&
-        startDay < monthFirstDay &&
-        endDay > monthFirstDay
-      ) {
-        const ongoingArr = map.get(monthFirstDay) ?? []
-        // Avoid duplicate if start already lands on monthFirstDay
-        if (!ongoingArr.some(x => x.event.id === e.id)) {
-          ongoingArr.push({ event: e, isEnd: false, isOngoing: true })
-          map.set(monthFirstDay, ongoingArr)
-        }
-      }
     }
+  }
+
+  return map
+}
+
+export type SubDateEntry = {
+  event: CorporateEvent
+  label: string
+  slotIndex: number
+}
+
+export function subDatesByDay(
+  events: CorporateEvent[],
+  slots: [string, string, string],
+): Map<string, SubDateEntry[]> {
+  const map = new Map<string, SubDateEntry[]>()
+
+  for (const e of events) {
+    const dates = e.sub_dates ?? []
+    dates.forEach((dateStr, i) => {
+      if (!dateStr || !slots[i]) return
+      const day = dateStr.length === 10 ? dateStr : isoDate(new Date(dateStr))
+      const arr = map.get(day) ?? []
+      arr.push({ event: e, label: slots[i], slotIndex: i })
+      map.set(day, arr)
+    })
   }
 
   return map
@@ -112,13 +106,12 @@ export function googleCalendarUrl(ev: CorporateEvent) {
 }
 
 export function outlookCalendarUrl(ev: CorporateEvent) {
+  const fmt = (s: string) => new Date(s).toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
   const p = new URLSearchParams({
-    path: '/calendar/action/compose',
-    rru: 'addevent',
-    startdt: ev.start_at,
-    enddt: ev.end_at,
-    subject: ev.title,
-    body: ev.description ?? '',
+    action: 'TEMPLATE',
+    text: ev.title,
+    dates: `${fmt(ev.start_at)}/${fmt(ev.end_at)}`,
+    details: ev.description ?? '',
     location: ev.location ?? '',
   })
   return `https://outlook.live.com/calendar/0/deeplink/compose?${p}`
