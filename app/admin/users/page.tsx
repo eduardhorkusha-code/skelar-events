@@ -11,7 +11,7 @@ type User = {
   created_at: string;
 };
 
-const STATUS_TABS = ["pending", "approved", "blocked"] as const;
+const STATUS_TABS = ["pending", "approved", "blocked", "deleted"] as const;
 
 export default function AdminUsersPage() {
   const [tab, setTab] = useState<(typeof STATUS_TABS)[number]>("pending");
@@ -19,6 +19,8 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [actionId, setActionId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<{ userId: string; email: string } | null>(null);
+  const [confirmWord, setConfirmWord] = useState('');
 
   async function fetchUsers(status: string) {
     setLoading(true);
@@ -30,7 +32,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => { fetchUsers(tab); }, [tab]);
 
-  async function handleAction(userId: string, action: "approve" | "block" | "pending") {
+  async function handleAction(userId: string, action: "approve" | "block" | "pending" | "delete") {
     setActionId(userId);
     const res = await fetch("/api/admin/users", {
       method: "PATCH",
@@ -109,29 +111,87 @@ export default function AdminUsersPage() {
                     >
                       Block
                     </button>
+                    <button
+                      onClick={() => setConfirmDelete({ userId: u.id, email: u.email })}
+                      disabled={actionId === u.id}
+                      className="px-3 py-1.5 text-xs font-medium bg-gray-700 text-red-400 border border-red-900 rounded-md hover:bg-red-950 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
                   </>
                 )}
                 {tab === "approved" && (
-                  <button
-                    onClick={() => handleAction(u.id, "block")}
-                    disabled={actionId === u.id}
-                    className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-                  >
-                    Block
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleAction(u.id, "block")}
+                      disabled={actionId === u.id}
+                      className="px-3 py-1.5 text-xs font-medium bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                    >
+                      Block
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete({ userId: u.id, email: u.email })}
+                      disabled={actionId === u.id}
+                      className="px-3 py-1.5 text-xs font-medium bg-gray-700 text-red-400 border border-red-900 rounded-md hover:bg-red-950 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
                 {tab === "blocked" && (
-                  <button
-                    onClick={() => handleAction(u.id, "approve")}
-                    disabled={actionId === u.id}
-                    className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
-                  >
-                    Unblock
-                  </button>
+                  <>
+                    <button
+                      onClick={() => handleAction(u.id, "approve")}
+                      disabled={actionId === u.id}
+                      className="px-3 py-1.5 text-xs font-medium bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50"
+                    >
+                      Unblock
+                    </button>
+                    <button
+                      onClick={() => setConfirmDelete({ userId: u.id, email: u.email })}
+                      disabled={actionId === u.id}
+                      className="px-3 py-1.5 text-xs font-medium bg-gray-700 text-red-400 border border-red-900 rounded-md hover:bg-red-950 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  </>
                 )}
               </div>
             </div>
           ))}
+        </div>
+      )}
+      {confirmDelete && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-gray-900 border border-gray-700 rounded-xl p-6 w-full max-w-sm space-y-4">
+            <h2 className="text-white font-semibold">Видалити юзера?</h2>
+            <p className="text-gray-400 text-sm">{confirmDelete.email}</p>
+            <p className="text-gray-500 text-xs">Введіть <span className="text-red-400 font-mono">ВИДАЛИТИ</span> для підтвердження</p>
+            <input
+              type="text"
+              value={confirmWord}
+              onChange={e => setConfirmWord(e.target.value)}
+              className="w-full bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white"
+              placeholder="ВИДАЛИТИ"
+              autoFocus
+            />
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => { setConfirmDelete(null); setConfirmWord(''); }} className="px-4 py-2 text-sm text-gray-400 hover:text-white">
+                Скасувати
+              </button>
+              <button
+                disabled={confirmWord !== 'ВИДАЛИТИ'}
+                onClick={() => {
+                  handleAction(confirmDelete.userId, 'delete');
+                  setConfirmDelete(null);
+                  setConfirmWord('');
+                }}
+                className="px-4 py-2 text-sm font-medium bg-red-600 text-white rounded-lg disabled:opacity-30 hover:bg-red-700"
+              >
+                Видалити
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

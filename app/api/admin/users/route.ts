@@ -36,17 +36,17 @@ export async function PATCH(req: NextRequest) {
   const ctx = await requireAdmin()
   if (!ctx) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
-  const { userId, action } = await req.json() as { userId: string; action: 'approve' | 'block' | 'pending' }
-  if (!userId || !['approve', 'block', 'pending'].includes(action)) {
+  const { userId, action } = await req.json() as { userId: string; action: 'approve' | 'block' | 'pending' | 'delete' }
+  if (!userId || !['approve', 'block', 'pending', 'delete'].includes(action)) {
     return NextResponse.json({ error: 'Invalid payload' }, { status: 400 })
   }
 
-  const statusMap = { approve: 'approved', block: 'blocked', pending: 'pending' }
+  const statusMap = { approve: 'approved', block: 'blocked', pending: 'pending', delete: 'deleted' }
   const { error } = await ctx.admin
     .from('profiles')
     .update({
       status: statusMap[action],
-      is_blocked: action === 'block',
+      is_blocked: action === 'block' || action === 'delete',
     })
     .eq('id', userId)
 
