@@ -2,7 +2,7 @@ import { requireEventsAccess } from '../../events/lib/auth'
 import { createClient } from '@/lib/supabase/server'
 import { EventsPageClient } from '../../events/components/EventsPageClient'
 import type { CorporateEvent, EventConfig, EventTypeConfig, TeamConfig } from '../../events/types'
-import { EVENT_TYPE_META, DOMAINS, LOCATIONS } from '../../events/types'
+import { EVENT_TYPE_META, DOMAINS, LOCATIONS, DEFAULT_SUB_DATE_SLOTS, DEFAULT_INTERNAL_TAGS } from '../../events/types'
 
 export const metadata = {
   title: 'Events — SKELAR Vault',
@@ -38,6 +38,9 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
       ?? Object.entries(EVENT_TYPE_META).map(([key, m]) => ({ key, ...m })),
     teams:         (cfgMap.teams       as TeamConfig[]      | undefined) ?? [],
     contact_email: (cfgMap.contact_email as string[] | undefined)?.[0] ?? undefined,
+    notion_url:     (cfgMap.notion_url     as string[] | undefined)?.[0] ?? undefined,
+    sub_date_slots: (cfgMap.sub_date_slots as [string, string, string] | undefined) ?? DEFAULT_SUB_DATE_SLOTS,
+    internal_tags:  (cfgMap.internal_tags  as string[] | undefined) ?? DEFAULT_INTERNAL_TAGS,
   }
 
   return (

@@ -1,6 +1,7 @@
 'use client'
 import React, { useState } from 'react'
 import type { EventConfig, EventTypeConfig, TeamConfig } from '../../types'
+import { DEFAULT_SUB_DATE_SLOTS, DEFAULT_INTERNAL_TAGS } from '../../types'
 import { C, inp } from './shared'
 
 const PRESET_COLORS = [
@@ -108,6 +109,14 @@ export function SettingsTab({ config, onSave }: {
   const [types,        setTypes]        = useState<EventTypeConfig[]>(config.event_types)
   const [teams,        setTeams]        = useState<TeamConfig[]>(config.teams ?? [])
   const [contactEmail, setContactEmail] = useState(config.contact_email ?? '')
+  const [notionUrl,    setNotionUrl]    = useState(config.notion_url ?? '')
+  const defaultSlots = config.sub_date_slots ?? DEFAULT_SUB_DATE_SLOTS
+  const [slot0, setSlot0] = useState(defaultSlots[0])
+  const [slot1, setSlot1] = useState(defaultSlots[1])
+  const [slot2, setSlot2] = useState(defaultSlots[2])
+  const [internalTags, setInternalTags] = useState<string[]>(
+    config.internal_tags ?? DEFAULT_INTERNAL_TAGS
+  )
   const [newTypeKey,   setNewTypeKey]   = useState('')
   const [newTypeLabel, setNewTypeLabel] = useState('')
   const [newTypeColor, setNewTypeColor] = useState(PRESET_COLORS[0].color)
@@ -121,7 +130,16 @@ export function SettingsTab({ config, onSave }: {
 
   async function handleSave() {
     setSaving(true); setMsg(null)
-    const updated: EventConfig = { domains, locations, event_types: types, teams, contact_email: contactEmail || undefined }
+    const updated: EventConfig = {
+      domains,
+      locations,
+      event_types: types,
+      teams,
+      contact_email: contactEmail || undefined,
+      notion_url: notionUrl.trim() || undefined,
+      sub_date_slots: [slot0.trim(), slot1.trim(), slot2.trim()] as [string, string, string],
+      internal_tags: internalTags,
+    }
     // The config API stores each key as an array; contact_email is stored as [email]
     const payload: Record<string, unknown[]> = {
       domains,
@@ -129,6 +147,9 @@ export function SettingsTab({ config, onSave }: {
       event_types: types,
       teams,
       ...(contactEmail ? { contact_email: [contactEmail] } : {}),
+      ...(notionUrl.trim() ? { notion_url: [notionUrl.trim()] } : {}),
+      sub_date_slots: [slot0.trim(), slot1.trim(), slot2.trim()],
+      internal_tags: internalTags,
     }
     try {
       const res = await fetch('/api/events/config', {
@@ -372,6 +393,72 @@ export function SettingsTab({ config, onSave }: {
             style={inp({ width: '100%', padding: '9px 12px', fontSize: 13 })}
           />
           <div style={{ marginTop: 8, fontSize: 11, color: C.faint }}>Leave empty to hide the contact line</div>
+        </div>
+      </div>
+
+      {/* Notion URL */}
+      <div style={card}>
+        <div style={cardHead}>
+          {iconBox('#f5f3ff', '#7C3AED33', '📖')}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Notion URL</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Shown in footer next to contact email</div>
+          </div>
+        </div>
+        <div style={cardBody}>
+          <input
+            value={notionUrl}
+            onChange={e => setNotionUrl(e.target.value)}
+            placeholder="https://notion.so/..."
+            style={inp({ width: '100%', padding: '9px 12px', fontSize: 13 })}
+          />
+          <div style={{ marginTop: 8, fontSize: 11, color: C.faint }}>Leave empty to hide the Notion link in footer</div>
+        </div>
+      </div>
+
+      {/* Sub-date slots */}
+      <div style={card}>
+        <div style={cardHead}>
+          {iconBox('#ecfeff', '#0891b233', '📅')}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Additional date slot names</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Up to 3 named date slots per event. Leave empty to disable a slot.</div>
+          </div>
+        </div>
+        <div style={cardBody}>
+          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+            {([
+              [slot0, setSlot0, 'Slot 1 (e.g. Ярмарок вакансій)'],
+              [slot1, setSlot1, 'Slot 2 (e.g. Short list)'],
+              [slot2, setSlot2, 'Slot 3 (custom label)'],
+            ] as [string, (v: string) => void, string][]).map(([val, setter, ph], i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <span style={{ fontSize: 11, color: C.muted, minWidth: 50 }}>Slot {i + 1}</span>
+                <input
+                  value={val}
+                  onChange={e => setter(e.target.value)}
+                  placeholder={ph}
+                  style={inp({ flex: 1, padding: '7px 10px', fontSize: 12 })}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Internal tags */}
+      <div style={card}>
+        <div style={cardHead}>
+          {iconBox('#fffbeb', '#d9770633', '🏷')}
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: C.text }}>Internal tag options</div>
+            <div style={{ fontSize: 11, color: C.muted }}>Tags visible only to editors/admins. Used for analytics.</div>
+          </div>
+          <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10, background: C.bg, border: `1px solid ${C.border}`, color: C.muted }}>not visible to users</span>
+        </div>
+        <div style={cardBody}>
+          <TagInput values={internalTags} onChange={setInternalTags} placeholder="Add tag…" />
+          <div style={{ marginTop: 8, fontSize: 11, color: C.faint }}>Enter value and press Enter or comma to add · Backspace to remove last</div>
         </div>
       </div>
 
