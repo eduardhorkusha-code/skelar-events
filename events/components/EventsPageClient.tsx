@@ -6,8 +6,10 @@ import { EVENT_TYPE_META, ORG_META, DOMAINS, LOCATIONS, resolveTypeMeta, parseTe
 import {
   getCalendarDays, isoDate, isoDateUTC, eventsByDay, formatTime, formatDate, formatDateShort,
   googleCalendarUrl, outlookCalendarUrl, MONTHS_UK, DAYS_UK, MONTHS_EN, DAYS_EN,
+  subDatesByDay,
   type CalendarEntry,
 } from '../lib/calendar-utils'
+import type { SubDateEntry } from '../lib/calendar-utils'
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 const C = {
@@ -134,8 +136,12 @@ function EventDetailModal({ event, onClose, onRsvp, rsvpLoading, canEdit, onEdit
   // Strip prefixes added by external imports (Genesis) that are visual noise in the modal
   const displayTitle = event.title.replace(/^(START|END|FINISH)\s+/i, '').trim()
   const dateStr = sameDay
-    ? `${formatDate(event.start_at)}, ${formatTime(event.start_at)} – ${formatTime(event.end_at)}`
-    : `${formatDate(event.start_at)} → ${formatDate(event.end_at)}`
+    ? event.show_time
+      ? `${formatDate(event.start_at)}, ${formatTime(event.start_at)} – ${formatTime(event.end_at)}`
+      : formatDate(event.start_at)
+    : event.show_time
+      ? `${formatDate(event.start_at)}, ${formatTime(event.start_at)} → ${formatDate(event.end_at)}, ${formatTime(event.end_at)}`
+      : `${formatDate(event.start_at)} → ${formatDate(event.end_at)}`
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 999, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', background: 'rgba(0,0,0,0.4)', padding: '60px 16px 16px' }} onClick={onClose}>
@@ -682,9 +688,10 @@ function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError,
 }
 
 // ── Calendar View ─────────────────────────────────────────────────────────────
-function MonthCalendar({ events, year, month, onEventClick, cfgTypes }: {
+function MonthCalendar({ events, year, month, onEventClick, cfgTypes, config }: {
   events: CorporateEvent[]; year: number; month: number; onEventClick: (e: CorporateEvent) => void
   cfgTypes?: EventTypeConfig[]
+  config?: EventConfig
 }) {
   const days          = useMemo(() => getCalendarDays(year, month), [year, month])
   const monthFirstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`
@@ -705,6 +712,11 @@ function MonthCalendar({ events, year, month, onEventClick, cfgTypes }: {
     }
     return map
   }, [events])
+
+  const subDatesMap = useMemo(() => {
+    const slots = config?.sub_date_slots ?? DEFAULT_SUB_DATE_SLOTS
+    return subDatesByDay(events, slots)
+  }, [events, config?.sub_date_slots])
 
   return (
     <div>
@@ -748,35 +760,6 @@ function MonthCalendar({ events, year, month, onEventClick, cfgTypes }: {
                 {shown.map(({ event: ev, isEnd, isOngoing }: CalendarEntry) => {
                   const org     = ev.organization ? ORG_META[ev.organization] : null
                   const color   = org?.color ?? resolveTypeMeta(ev.event_type, cfgTypes).color
-
-                  // ── ONGOING chip (spans through this month) ───────────────
-                  if (isOngoing) {
-                    return (
-                      <button
-                        key={`${ev.id}-ongoing`}
-                        onClick={() => onEventClick(ev)}
-                        title={ev.title}
-                        style={{
-                          display: 'flex', alignItems: 'flex-start', gap: 4,
-                          width: '100%', padding: '3px 5px', borderRadius: 3,
-                          fontSize: 10.5, fontWeight: 500,
-                          background: `${color}08`, color: C.muted,
-                          border: `1px dotted ${color}40`,
-                          cursor: 'pointer', textAlign: 'left' as const,
-                          fontFamily: 'inherit', flexShrink: 0,
-                        }}
-                      >
-                        <span style={{ width: 3, minHeight: 10, borderRadius: 2, background: `${color}50`, flexShrink: 0, display: 'block', marginTop: 2 }} />
-                        <span style={{ flex: 1, lineHeight: '15px', whiteSpace: 'normal' as const, wordBreak: 'break-word' as const }}>
-                          <span style={{ fontSize: 9, fontWeight: 700, color, opacity: 0.6, marginRight: 3 }}>→</span>
-                          {ev.title}
-                          <span style={{ fontSize: 9, color, fontWeight: 700, marginLeft: 4, opacity: 0.6, whiteSpace: 'nowrap' as const }}>
-                            ends {formatDateShort(ev.end_at)}
-                          </span>
-                        </span>
-                      </button>
-                    )
-                  }
 
                   // ── END day chip ──────────────────────────────────────────
                   if (isEnd) {
@@ -858,6 +841,32 @@ function MonthCalendar({ events, year, month, onEventClick, cfgTypes }: {
                     <span style={{ width: 3, height: 10, borderRadius: 2, background: '#d97706', flexShrink: 0, display: 'block' }} />
                     <span style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as const, lineHeight: '14px', whiteSpace: 'normal' as const } as React.CSSProperties}>
                       {m.label}: {ev.title}
+                    </span>
+                  </button>
+                ))}
+                {/* Sub-date chips */}
+                {(subDatesMap.get(dayStr) ?? []).map(({ event: ev, label }: SubDateEntry) => (
+                  <button
+                    key={`${ev.id}-sub-${label}`}
+                    onClick={() => onEventClick(ev)}
+                    title={`${label}: ${ev.title}`}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 4,
+                      padding: '2px 5px', borderRadius: 3,
+                      fontSize: 10.5, fontWeight: 500,
+                      background: '#f5f3ff', color: '#6d28d9',
+                      border: '1px solid #8b5cf6',
+                      cursor: 'pointer', textAlign: 'left' as const,
+                      fontFamily: 'inherit', overflow: 'hidden', flexShrink: 0,
+                    }}
+                  >
+                    <span style={{ width: 3, height: 10, borderRadius: 2, background: '#7c3aed', flexShrink: 0, display: 'block' }} />
+                    <span style={{
+                      overflow: 'hidden', display: '-webkit-box',
+                      WebkitLineClamp: 1, WebkitBoxOrient: 'vertical' as const,
+                      lineHeight: '14px',
+                    } as React.CSSProperties}>
+                      {label}: {ev.title}
                     </span>
                   </button>
                 ))}
@@ -1521,7 +1530,7 @@ export function EventsPageClient({ events: initialEvents, userId, name, role, is
 
         {view === 'calendar' && (
           <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, overflow: 'hidden' }}>
-            <MonthCalendar events={filtered} year={calYear} month={calMonth} onEventClick={setSelected} cfgTypes={cfgTypes} />
+            <MonthCalendar events={filtered} year={calYear} month={calMonth} onEventClick={setSelected} cfgTypes={cfgTypes} config={config} />
           </div>
         )}
 
