@@ -13,11 +13,12 @@ import { CreateEventForm } from './manager/create-event-form'
 import { SettingsTab } from './manager/settings-tab'
 import { EditTab } from './manager/edit-tab'
 import { ManualTab } from './manager/manual-tab'
+import { LogsTab } from './manager/logs-tab'
 
 // Re-export for consumers that import from ManagerClient
 export type { ExistingEvent, StagedEvent }
 
-type ManagerTab = 'import' | 'review' | 'drafts' | 'edit' | 'stats' | 'deleted' | 'settings' | 'manual'
+type ManagerTab = 'import' | 'review' | 'drafts' | 'edit' | 'stats' | 'deleted' | 'settings' | 'manual' | 'logs'
 
 interface Props {
   existingEvents: RichEvent[]
@@ -88,6 +89,7 @@ export function ManagerClient({ existingEvents, userName, userRole, config: init
     { key: 'deleted',  label: 'Deleted',  count: deletedCount || undefined },
     { key: 'settings', label: 'Settings' },
     { key: 'manual',   label: 'Manual'   },
+    { key: 'logs',     label: 'Logs'     },
   ]
 
   return (
@@ -132,7 +134,7 @@ export function ManagerClient({ existingEvents, userName, userRole, config: init
               <button key={key} onClick={() => setTab(key)} style={{
                 padding: '8px 18px', fontSize: 12, fontWeight: 600,
                 border: `1px solid ${tab === key ? '#fff' : '#555'}`,
-                borderRadius: key === 'import' ? '6px 0 0 6px' : key === 'manual' ? '0 6px 6px 0' : '0',
+                borderRadius: key === 'import' ? '6px 0 0 6px' : key === 'logs' ? '0 6px 6px 0' : '0',
                 background: tab === key ? '#fff' : 'transparent',
                 color: tab === key ? C.text : '#aaa',
                 cursor: 'pointer', fontFamily: 'inherit',
@@ -162,6 +164,7 @@ export function ManagerClient({ existingEvents, userName, userRole, config: init
         {tab === 'deleted'  && <DeletedTab initialDeleted={allEvents} onRestore={handleRestored} />}
         {tab === 'settings' && <SettingsTab config={config} onSave={setConfig} />}
         {tab === 'manual'   && <ManualTab />}
+        {tab === 'logs'     && <LogsTab />}
       </main>
 
       {showCreate && (
