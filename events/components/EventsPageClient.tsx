@@ -2,7 +2,7 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import type { CorporateEvent, EventType, Organization, RsvpStatus, EventConfig, EventTypeConfig, TeamConfig, IntensiveMilestone } from '../types'
-import { EVENT_TYPE_META, ORG_META, DOMAINS, LOCATIONS, resolveTypeMeta, parseTeamMember } from '../types'
+import { EVENT_TYPE_META, ORG_META, DOMAINS, LOCATIONS, resolveTypeMeta, parseTeamMember, DEFAULT_INTERNAL_TAGS, DEFAULT_SUB_DATE_SLOTS } from '../types'
 import {
   getCalendarDays, isoDate, isoDateUTC, eventsByDay, formatTime, formatDate, formatDateShort,
   googleCalendarUrl, outlookCalendarUrl, MONTHS_UK, DAYS_UK, MONTHS_EN, DAYS_EN,
@@ -350,10 +350,11 @@ function TeamMemberPicker({ value, onChange, teams }: {
 }
 
 // ── Admin Event Form ──────────────────────────────────────────────────────────
-function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError, domains, locations, eventTypes, teams }: {
+function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError, domains, locations, eventTypes, teams, config }: {
   initial: Partial<CorporateEvent>; onSave: (d: Partial<CorporateEvent>) => void
   onDelete?: () => void; onClose: () => void; saving: boolean; saveError?: string | null
   domains: string[]; locations: string[]; eventTypes: EventTypeConfig[]; teams: TeamConfig[]
+  config?: EventConfig
 }) {
   const isEdit = !!initial.id
   const [title,          setTitle]          = useState(initial.title ?? '')
@@ -378,6 +379,15 @@ function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError,
   const [capacity,       setCapacity]       = useState(initial.capacity ? String(initial.capacity) : '')
   const [status,         setStatus]         = useState<'draft'|'published'>(initial.status === 'published' ? 'published' : 'draft')
   const [confirmDel,     setConfirmDel]     = useState(false)
+  const [showTime,    setShowTime]    = useState(initial.show_time    ?? false)
+  const [owner,       setOwner]       = useState(initial.owner        ?? '')
+  const [tags,        setTags]        = useState<string[]>(initial.tags ?? [])
+  const [ashbyUrl,    setAshbyUrl]    = useState(initial.ashby_url    ?? '')
+  const [longListUrl, setLongListUrl] = useState(initial.long_list_url ?? '')
+  const [subDates,    setSubDates]    = useState<[string,string,string]>(() => {
+    const sd = initial.sub_dates ?? []
+    return [sd[0] ?? '', sd[1] ?? '', sd[2] ?? '']
+  })
 
   function handleSave(publish: boolean) {
     onSave({
@@ -396,6 +406,12 @@ function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError,
       end_at:   `${endDate || startDate}T${endTime}:00Z`,
       capacity: capacity ? parseInt(capacity) : null,
       status: publish ? 'published' : 'draft',
+      show_time:      showTime,
+      owner:          owner.trim() || null,
+      tags,
+      ashby_url:      ashbyUrl.trim()    || null,
+      long_list_url:  longListUrl.trim() || null,
+      sub_dates:      subDates,
     })
   }
 
@@ -465,6 +481,29 @@ function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError,
             </div>
           </div>
 
+          {/* show_time toggle */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0' }}>
+            <div>
+              <span style={{ fontSize: 13, color: C.text, fontWeight: 500 }}>Show time to users</span>
+              <span style={{ display: 'block', fontSize: 11, color: C.muted, marginTop: 2 }}>If off, only the date is shown</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowTime(v => !v)}
+              style={{
+                width: 40, height: 22, borderRadius: 11, border: 'none', cursor: 'pointer',
+                background: showTime ? C.brand : C.border,
+                position: 'relative' as const, flexShrink: 0,
+              }}
+            >
+              <span style={{
+                position: 'absolute', top: 3, left: showTime ? 21 : 3,
+                width: 16, height: 16, borderRadius: '50%', background: '#fff',
+                display: 'block',
+              }} />
+            </button>
+          </div>
+
           <div>
             <span style={lbl}>Location</span>
             <MultiSelectDropdown
@@ -483,6 +522,96 @@ function AdminEventForm({ initial, onSave, onDelete, onClose, saving, saveError,
             <span style={lbl}>Responsible persons</span>
             <TeamMemberPicker value={teamMembers} onChange={setTeamMembers} teams={teams} />
           </div>
+
+          {/* owner */}
+          <div>
+            <span style={lbl}>Відповідальна (Recruiting Owner)</span>
+            <input
+              style={inp}
+              value={owner}
+              onChange={e => setOwner(e.target.value)}
+              placeholder="e.g. Kateryna Zabotkina"
+            />
+          </div>
+
+          {/* internal tags */}
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+              <span style={lbl}>Internal Tags</span>
+              <span style={{ fontSize: 10, background: C.bg, border: `1px solid ${C.border}`, borderRadius: 10, padding: '1px 7px', color: C.muted }}>not visible to users</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' as const }}>
+              {(config?.internal_tags ?? DEFAULT_INTERNAL_TAGS).map(tag => {
+                const selected = tags.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setTags(prev => selected ? prev.filter(t => t !== tag) : [...prev, tag])}
+                    style={{
+                      padding: '4px 10px', borderRadius: 20, fontSize: 12, cursor: 'pointer',
+                      border: `1px solid ${selected ? C.brand : C.border}`,
+                      background: selected ? `${C.brand}18` : C.surface,
+                      color: selected ? C.brand : C.muted,
+                      fontFamily: 'inherit',
+                    }}
+                  >
+                    {selected ? '✓ ' : ''}{tag}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* CRM links */}
+          <div>
+            <span style={lbl}>CRM & Recruiting Links</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <span style={{ fontSize: 18 }}>🏢</span>
+              <input
+                style={{ ...inp, flex: 1 }}
+                value={ashbyUrl}
+                onChange={e => setAshbyUrl(e.target.value)}
+                placeholder="Ashby URL (https://app.ashby.com/...)"
+              />
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 18 }}>📋</span>
+              <input
+                style={{ ...inp, flex: 1 }}
+                value={longListUrl}
+                onChange={e => setLongListUrl(e.target.value)}
+                placeholder="Long List Google Sheet URL"
+              />
+            </div>
+          </div>
+
+          {/* sub-dates */}
+          {(() => {
+            const slots = config?.sub_date_slots ?? DEFAULT_SUB_DATE_SLOTS
+            const activeSlots = slots.map((label, i) => ({ label, i })).filter(s => s.label)
+            if (!activeSlots.length) return null
+            return (
+              <div>
+                <span style={lbl}>Additional Dates</span>
+                {activeSlots.map(({ label, i }) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                    <span style={{ fontSize: 12, color: C.muted, minWidth: 130 }}>{label}</span>
+                    <input
+                      type="date"
+                      style={{ ...inp }}
+                      value={subDates[i as 0|1|2]}
+                      onChange={e => setSubDates(prev => {
+                        const next = [...prev] as [string,string,string]
+                        next[i as 0|1|2] = e.target.value
+                        return next
+                      })}
+                    />
+                  </div>
+                ))}
+              </div>
+            )
+          })()}
 
           <div>
             <span style={lbl}>Participants table URL</span>
@@ -1425,7 +1554,7 @@ export function EventsPageClient({ events: initialEvents, userId, name, role, is
       )}
 
       {editTarget !== null && (
-        <AdminEventForm initial={editTarget} onSave={handleSaveEvent} onDelete={editTarget.id ? handleDeleteEvent : undefined} onClose={() => { setEditTarget(null); setSaveError(null) }} saving={saving} saveError={saveError} domains={cfgDomains} locations={cfgLocations} eventTypes={cfgTypes} teams={config?.teams ?? []} />
+        <AdminEventForm initial={editTarget} onSave={handleSaveEvent} onDelete={editTarget.id ? handleDeleteEvent : undefined} onClose={() => { setEditTarget(null); setSaveError(null) }} saving={saving} saveError={saveError} domains={cfgDomains} locations={cfgLocations} eventTypes={cfgTypes} teams={config?.teams ?? []} config={config} />
       )}
     </div>
   )
