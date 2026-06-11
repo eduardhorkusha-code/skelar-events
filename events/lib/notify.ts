@@ -113,7 +113,7 @@ export async function notifyEventChange(
 
   // Add "View event" button if landing_url is available
   const landingUrl = String(newRow.landing_url ?? oldRow.landing_url ?? '')
-  const siteUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://skelar-vault.vercel.app'
+  const siteUrl    = process.env.NEXT_PUBLIC_APP_URL ?? 'https://events.skelar.tech'
   const viewUrl    = landingUrl || `${siteUrl}/events`
 
   blocks.push({
